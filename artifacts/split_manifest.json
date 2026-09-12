@@ -1,0 +1,35 @@
+{
+  "dataset": "bbbp",
+  "split_origin": "locally generated seed-42 scaffold split from the uploaded raw CSV; NOT organizer-provided",
+  "source_preparation": {
+    "raw_rows": 2050,
+    "invalid_rows": 11,
+    "conflicting_canonical_structures": 10,
+    "duplicate_or_conflicting_rows_removed": 85,
+    "unique_molecules": 1965,
+    "scaffold_groups": 1114,
+    "counts": {
+      "train": 1572,
+      "valid": 196,
+      "test": 197
+    },
+    "method": "seed 42 Bemis-Murcko scaffold groups; self-generated, not organizer-provided"
+  },
+  "split_files": {
+    "train": {
+      "file": "artifacts\\splits\\train.csv",
+      "sha256": "2d4b83b2eb9f268d0d734d02c90d57bdd9d03b3521b03d59977c28686633cba9",
+      "count": 1572
+    },
+    "valid": {
+      "file": "artifacts\\splits\\valid.csv",
+      "sha256": "cfc688558ecdaaa3b4ed9763e6dce028923856bafc97a3d5379b1b90faf61fb1",
+      "count": 196
+    },
+    "test": {
+      "file": "artifacts\\splits\\test.csv",
+      "sha256": "c5f1bb28fb506d2bfa776ac9fe7ebdb06133a5af12a25ce261db642583618ae9",
+      "count": 197
+    }
+  }
+}

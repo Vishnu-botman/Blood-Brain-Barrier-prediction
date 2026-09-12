@@ -1,29 +1,8 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*$py.class
-
-# PyTorch / Models / Checkpoints
-*.pt
-*.pth
-*.ckpt
-
-# Datasets (auto-downloaded on execution by PyG MoleculeNet)
-data/
-
-# Environments & virtualenvs
-.env
-.venv
-env/
-venv/
-ENV/
-
-# IDE & Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
+*.pyc
+.venv/
+node_modules/
+frontend/node_modules/
+frontend/dist/
+official_data/*.csv
+official_data/*.tsv

@@ -1,111 +1,46 @@
-# Blood-Brain Barrier Prediction & Molecular Graph Representation Learning
+# BBBP Blood Brain Barrier Screening
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch Geometric](https://img.shields.io/badge/PyG-PyTorch%20Geometric-green.svg)](https://pyg.org/)
-[![MoleculeNet Benchmark](https://img.shields.io/badge/Benchmark-MoleculeNet-orange.svg)](https://moleculenet.org/)
+A focused third-year Track 3 graph-classification hackathon project: enter one molecular SMILES and estimate whether the molecule is **BBB+** or **BBB−**. This ZIP includes **only the BBBP dataset**, extracted as `data_sources/bbbp.csv` from your uploaded `data.zip`. Original source: `data/bbbp/raw/BBBP.csv`, 2,050 rows, columns `smiles` and `p_np`; the positive label is `p_np = 1`. `data_sources/PROVENANCE.json` records source and extracted-file SHA-256 hashes. **BACE, HIV and ClinTox data are excluded and not used in training.** Cached `.pt` files from the upload are not loaded.
 
-A deep learning framework for predicting molecular properties—specifically **Blood-Brain Barrier Penetration (BBBP)** and **Beta-secretase 1 inhibition (BACE)**—using Graph Neural Networks (GNNs).
+The experiment trains a mandatory **2-layer GCN baseline**, a 2-layer GAT, a 2-layer GraphSAGE and a Morgan-fingerprint Random Forest. The proposed method averages their four probabilities. A GNN-only average is the ablation (RF removed). The final test ROC-AUC is computed on **all** test molecules and compared honestly with GCN; the extra `UNCERTAIN` demo output never changes the leaderboard metric.
 
-This project benchmarks **Graph Convolutional Networks (GCN)**, **Graph Attention Networks (GAT)**, and **GraphSAGE** under rigorous **Bemis-Murcko scaffold splitting**, providing both quantitative performance evaluations and qualitative interpretability via multi-head attention weight extraction.
+## Install and run
 
----
-
-## 📌 Key Highlights
-
-- **Rigorous Chemical Splitting**: Uses **Bemis-Murcko scaffold splitting** ($80/10/10$) to prevent structural leakage between train, validation, and test partitions (reflecting real-world prospective drug discovery).
-- **Multiple Graph Architectures**: Benchmarks GCN, multi-head GAT, and GraphSAGE with global mean pooling across varied network depths ($L \in \{2, 3, 4\}$).
-- **Explainable AI (XAI)**: Extracts layer-wise attention weights from multi-head GAT models and projects them onto 2D molecular graphs to identify critical pharmacophoric functional groups.
-- **Automated Data Pipeline**: Integrates seamlessly with PyTorch Geometric (`torch_geometric`) and RDKit to auto-download and process benchmarks on-demand.
-
----
-
-## 🔬 Attention Analysis & Interpretability
-
-Multi-head attention in GAT reveals which atomic centers and bonds drive the model's prediction for blood-brain barrier permeability:
-
-![GAT Attention Analysis](gat_attention_analysis.png)
-
----
-
-## 📂 Project Structure
-
-```
-├── ablation.py                 # Multi-depth & multi-model ablation runner
-├── compat.py                   # PyTorch/PyG runtime normalization compatibility patch
-├── data.py                     # Bemis-Murcko scaffold splitter & MoleculeNet dataloader
-├── models.py                   # GCN, GAT, and GraphSAGE model implementations
-├── train.py                    # Training & evaluation pipeline (ROC-AUC)
-├── visualize_attention.py      # Extracts GAT attention and plots atom-level importance
-├── gat_attention_analysis.png  # Generated attention attribution visualizer
-└── README.md                   # Project documentation
-```
-
----
-
-## 🚀 Getting Started
-
-### 1. Prerequisites & Installation
-
-Ensure you have Python 3.10+ installed with PyTorch, PyTorch Geometric, RDKit, and scikit-learn:
+Use Python 3.10–3.12 and install the appropriate [PyTorch CPU/CUDA build](https://pytorch.org/get-started/locally/) first.
 
 ```bash
-pip install torch torchvision
-pip install torch-geometric
-pip install rdkit
-pip install scikit-learn matplotlib
+pip install -r requirements.txt
+python run_hackathon.py
+streamlit run app.py
 ```
 
-### 2. Training a Single Model
-
-To train a model on BBBP or BACE:
+`python run_hackathon.py` is the one-command experiment: it prepares a fixed split, trains the models, evaluates test once after validation-based checkpoint selection, saves weights and prints baseline versus proposed ROC-AUC. For a second experiment, use `--out second_run` instead of overwriting the first. To inspect a trained model from the command line:
 
 ```bash
-# Train GAT on BBBP
-python train.py --model gat --dataset bbbp --layers 2 --hidden 64 --epochs 150
-
-# Train GraphSAGE on BACE
-python train.py --model sage --dataset bace --layers 3 --hidden 64 --epochs 150
+python predict.py 'CCO'
+python visualize_attention.py 'CCO' --out attention.png
 ```
 
-Available arguments:
-- `--model`: `gcn`, `gat`, `sage`
-- `--dataset`: `bbbp`, `bace`
-- `--layers`: number of message-passing layers (default: 2)
-- `--hidden`: hidden dimension (default: 64)
-- `--epochs`: number of training epochs (default: 150)
-- `--lr`: learning rate (default: 0.001)
+## Dataset and split honesty
 
-### 3. Running Ablation Studies
+Your archive contains raw BBBP data but **no organizer-issued train/validation/test split**. With seed 42, the code validates molecules, removes canonical duplicates and conflicting labels, then generates *one project-defined 80/10/10 Bemis–Murcko scaffold split*. It records dropped-row counts, the split CSVs and their hashes in `artifacts/split_manifest.json`. Every model uses this same split. This is **not** an official organizer split; do not call it one.
 
-Run an automated ablation benchmark across all architectures (`GCN`, `GAT`, `GraphSAGE`) and layer depths ($L \in \{2, 3, 4\}$):
+If your teacher later supplies fixed BBBP files, copy the unchanged `train.csv`, `valid.csv`, `test.csv` to `official_data/` and run:
 
 ```bash
-python ablation.py --dataset both --epochs 150
+python run_hackathon.py --official-data-dir official_data --out official_run
 ```
 
-Results are printed in formatted tables and exported directly to `results_dual_ablation.csv`.
+Required columns: `SMILES,label` with values 0 or 1, or `SMILES,BBB+/BBB-` with labels `BBB+`/`BBB-`. The loader fails rather than moving rows when exact canonical structures overlap across official splits. Use the organizer's metric and data protocol if they differ from the draft.
 
-### 4. Attention Visualization & Explainability
+## Files you get after training
 
-To train a GAT and generate atom-level attention importance charts on test molecules:
+- `artifacts/splits/` — generated train/valid/test CSVs when using the included dataset.
+- `artifacts/split_manifest.json` — split origin, source preprocessing and hashes.
+- `artifacts/seed_42/` — saved GCN, GAT, GraphSAGE and RF models.
+- `artifacts/summary.json` — test ROC-AUC, PR-AUC, balanced accuracy, confusion matrix, parameter counts, RF ablation and abstention coverage.
+- `artifacts/report_draft.md` — results table with mandatory GCN comparison and an honest win/loss statement. Complete citations and export to **four pages maximum**.
 
-```bash
-python visualize_attention.py
-```
+The app loads the saved BBBP models without retraining, draws the molecule and shows per-model estimates, similarity to the training set and `BBB+`, `BBB−` or `UNCERTAIN`. It abstains heuristically when fewer than 3/4 models agree, nearest training Tanimoto similarity is below .35, or the mean probability is between .35 and .65. Probabilities are **uncalibrated**; attention visualization is qualitative, not proof of chemical feature importance. Structural screening does not replace experimental BBB testing.
 
-The output visualization will be saved as `gat_attention_analysis.png`.
-
----
-
-## 📊 Benchmark Datasets
-
-| Dataset | Property | Tasks | Size | Split Protocol |
-| :--- | :--- | :--- | :--- | :--- |
-| **BBBP** | Blood-Brain Barrier Penetration | Binary Classification | ~2,050 molecules | Bemis-Murcko Scaffold (80/10/10) |
-| **BACE** | $\beta$-secretase 1 inhibition | Binary Classification | ~1,520 molecules | Bemis-Murcko Scaffold (80/10/10) |
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License.
+No trained weights, fabricated score or prerecorded demo are included because training could not execute in this environment. After running, verify the generated results, cite MoleculeNet/BBBP and the original project's model code, then record the demo using `DEMO_GUIDE.md`. Report a negative result if the proposal does not beat GCN.
